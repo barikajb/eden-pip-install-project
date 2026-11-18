@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eden-xi"
+version = "0.1.0"
+description = "Eden.xi curated Python stack: a core bundle plus modular AI, web, and data extras."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Barika Johnbazia" }]
+keywords = ["eden", "bundle", "stack", "ai", "web", "data"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.0.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+ai = ["groq>=0.11.0", "openai>=1.0.0"]
+web = ["fastapi>=0.110.0", "uvicorn>=0.29.0"]
+data = ["pandas>=2.0.0", "numpy>=1.26.0"]
+all = ["eden-xi[ai,web,data]"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eden_xi"]
