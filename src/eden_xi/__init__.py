@@ -1,6 +1,11 @@
 """eden-xi: a curated dependency bundle from Eden.xi Tech Solutions."""
 
-__version__ = "0.1.0"
+import importlib
+import importlib.util
+import sys
+import warnings
+
+__version__ = "0.2.0"
 
 # Core dependencies (installed with the base package).
 import dotenv
@@ -8,57 +13,64 @@ import pydantic
 import requests
 import rich
 
-# Optional dependencies: missing ones are set to None so that
-# `import eden_xi` never fails on a base-only install.
-try:
-    import groq
-except ImportError:
-    groq = None
+# Optional packages and the extra that provides each one.
+_OPTIONAL = {
+    "groq": "ai",
+    "openai": "ai",
+    "fastapi": "web",
+    "uvicorn": "web",
+    "pandas": "data",
+    "numpy": "data",
+}
+_ALIASES = {"pd": "pandas", "np": "numpy"}
 
-try:
-    import openai
-except ImportError:
-    openai = None
 
-try:
-    import fastapi
-except ImportError:
-    fastapi = None
+def __getattr__(name):
+    """Load optional packages on first use (also powers `from eden_xi import pd`)."""
+    real = _ALIASES.get(name, name)
+    if real in _OPTIONAL:
+        try:
+            return importlib.import_module(real)
+        except ImportError:
+            raise ImportError(
+                f"'{real}' is not installed. Run: pip install \"eden-xi[{_OPTIONAL[real]}]\""
+            ) from None
+    raise AttributeError(f"module 'eden_xi' has no attribute '{name}'")
 
-try:
-    import uvicorn
-except ImportError:
-    uvicorn = None
 
-try:
-    import pandas
-except ImportError:
-    pandas = None
+def load(*names):
+    """Put installed libraries into the caller's namespace.
 
-try:
-    import numpy
-except ImportError:
-    numpy = None
+    eden_xi.load()                # everything installed, plus pd and np
+    eden_xi.load("pandas", "pd")  # only these
+    """
+    namespace = sys._getframe(1).f_globals
+    wanted = names or tuple(_OPTIONAL) + tuple(_ALIASES)
+    for name in wanted:
+        try:
+            namespace[name] = __getattr__(name)
+        except ImportError as exc:
+            if names:
+                warnings.warn(str(exc), stacklevel=2)
 
 
 def status():
     """Return a dict showing which core and optional stacks are installed."""
-    core = {
-        "requests": requests is not None,
-        "dotenv": dotenv is not None,
-        "pydantic": pydantic is not None,
-        "rich": rich is not None,
-    }
-    ai = {"groq": groq is not None, "openai": openai is not None}
-    web = {"fastapi": fastapi is not None, "uvicorn": uvicorn is not None}
-    data = {"pandas": pandas is not None, "numpy": numpy is not None}
+    def has(pkg):
+        return importlib.util.find_spec(pkg) is not None
+
     return {
         "version": __version__,
-        "core": core,
-        "ai": ai,
-        "web": web,
-        "data": data,
+        "core": {
+            "requests": has("requests"),
+            "dotenv": has("dotenv"),
+            "pydantic": has("pydantic"),
+            "rich": has("rich"),
+        },
+        "ai": {"groq": has("groq"), "openai": has("openai")},
+        "web": {"fastapi": has("fastapi"), "uvicorn": has("uvicorn")},
+        "data": {"pandas": has("pandas"), "numpy": has("numpy")},
     }
 
 
-__all__ = ["__version__", "status"]
+__all__ = ["__version__", "load", "status"]

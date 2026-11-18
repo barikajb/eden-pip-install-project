@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eden-xi"
-version = "0.1.0"
+version = "0.2.0"
 description = "Eden.xi curated Python stack: a core bundle plus modular AI, web, and data extras."
 readme = "README.md"
 requires-python = ">=3.9"
